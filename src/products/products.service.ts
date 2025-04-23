@@ -5,9 +5,10 @@ import { GetProductsDto } from './dto/get-products.dto';
 @Injectable()
 export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
-  async getProducts({ page, limit }: GetProductsDto = {}) {
+  async getProducts({ page, limit }: GetProductsDto = {}, category?: string) {
     if (!page && !limit) {
       return await this.prisma.product.findMany({
+        where: { category },
         orderBy: {
           intro: 'desc',
         },
@@ -25,6 +26,7 @@ export class ProductsService {
     return await this.prisma.product.findMany({
       take: limit,
       skip,
+      where: { category },
       orderBy: {
         intro: 'desc',
       },

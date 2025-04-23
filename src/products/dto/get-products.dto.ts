@@ -1,13 +1,15 @@
 import { Type } from 'class-transformer';
-import { IsOptional, IsPositive } from 'class-validator';
+import { IsInt, IsOptional, IsPositive } from 'class-validator';
 
 export class GetProductsDto {
   @IsOptional()
-  @Type(() => Number)
+  @IsInt()
   @IsPositive()
+  @Type(() => Number)
   page?: number;
   @IsOptional()
-  @Type(() => Number)
+  @IsInt()
   @IsPositive()
+  @Type(() => Number)
   limit?: number;
 }
