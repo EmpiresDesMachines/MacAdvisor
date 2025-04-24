@@ -1,11 +1,15 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
 import { GetProductsDto } from './dto/get-products.dto';
+import { CategoryEnum } from './types/category.enum';
 
 @Injectable()
 export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
-  async getProducts({ page, limit }: GetProductsDto = {}, category?: string) {
+  async getProducts(
+    { page, limit }: GetProductsDto = {},
+    category?: CategoryEnum,
+  ) {
     if (!page && !limit) {
       return await this.prisma.product.findMany({
         where: { category },

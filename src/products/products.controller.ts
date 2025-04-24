@@ -1,6 +1,8 @@
 import { Controller, Get, Query, Param } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { GetProductsDto } from './dto/get-products.dto';
+import { CategoryParamDto } from './dto/category-param.dto';
+import { CategoryEnum } from './types/category.enum';
 
 @Controller('products')
 export class ProductsController {
@@ -18,16 +20,20 @@ export class ProductsController {
   @Get('category/:category')
   async getProductsByCategory(
     @Query() dto: GetProductsDto,
-    @Param('category') category: string,
+    //@Param('category') category: string,
+    @Param() params: CategoryParamDto,
   ) {
-    return await this.productsService.getProducts(dto, category);
+    return await this.productsService.getProducts(
+      dto,
+      params.category as CategoryEnum,
+    );
   }
 
-  @Get('category/:category/:id')
-  async getProductByCategoryAndId(
-    @Param('category') category: string,
-    @Param('id') id: string,
-  ) {
-    return `Товар с ID: ${id} из категории: ${category}`;
-  }
+  //@Get('category/:category/:id')
+  //async getProductByCategoryAndId(
+  //  @Param('category') category: string,
+  //  @Param('id') id: string,
+  //) {
+  //  return `Товар с ID: ${id} из категории: ${category}`;
+  //}
 }
