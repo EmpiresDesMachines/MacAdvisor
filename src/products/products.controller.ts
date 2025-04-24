@@ -21,19 +21,25 @@ export class ProductsController {
   async getProductsByCategory(
     @Query() dto: GetProductsDto,
     //@Param('category') category: string,
-    @Param() params: CategoryParamDto,
+    @Param() { category }: CategoryParamDto,
   ) {
     return await this.productsService.getProducts(
       dto,
-      params.category as CategoryEnum,
+      category as CategoryEnum,
     );
   }
 
-  //@Get('category/:category/:id')
-  //async getProductByCategoryAndId(
-  //  @Param('category') category: string,
-  //  @Param('id') id: string,
-  //) {
-  //  return `Товар с ID: ${id} из категории: ${category}`;
-  //}
+  // /products/category/MacBook Air/3baad9d5-3fa9-4ddc-b507-45a95e3ca56b
+  @Get('category/:category/:id')
+  async getProductsById(
+    @Query() dto: GetProductsDto,
+    //@Param('category') category: string,
+    @Param() { category, id }: CategoryParamDto,
+  ) {
+    return await this.productsService.getProducts(
+      dto,
+      category as CategoryEnum,
+      id,
+    );
+  }
 }

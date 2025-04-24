@@ -9,10 +9,26 @@ export class ProductsService {
   async getProducts(
     { page, limit }: GetProductsDto = {},
     category?: CategoryEnum,
+    id?: string,
   ) {
+    if (id) {
+      const product = await this.prisma.product.findUnique({ where: { id } });
+
+      if (!product) {
+        throw new HttpException(
+          `Product with id ${id} was not found`,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      return product;
+    }
+
+    const where = category ? { category } : {};
+
     if (!page && !limit) {
       return await this.prisma.product.findMany({
-        where: { category },
+        where,
         orderBy: {
           intro: 'desc',
         },
@@ -27,10 +43,11 @@ export class ProductsService {
     }
 
     const skip = (page - 1) * limit;
+
     return await this.prisma.product.findMany({
       take: limit,
       skip,
-      where: { category },
+      where,
       orderBy: {
         intro: 'desc',
       },

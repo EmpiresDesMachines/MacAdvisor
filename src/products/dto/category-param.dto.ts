@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
 import { CategoryEnum } from '../types/category.enum';
 
 export class CategoryParamDto {
@@ -7,5 +7,6 @@ export class CategoryParamDto {
   category?: string;
   @IsOptional()
   @IsString()
+  @IsUUID()
   id?: string;
 }
