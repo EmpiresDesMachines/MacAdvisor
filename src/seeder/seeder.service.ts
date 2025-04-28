@@ -1,5 +1,5 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { PrismaService } from 'prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { join } from 'path';
 import { readFile } from 'fs/promises';
 import { DeviceData } from './types/deviceData.interface';
