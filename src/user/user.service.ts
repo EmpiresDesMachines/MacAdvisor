@@ -1,6 +1,7 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { User } from './types/user.interface';
+import { changeProfileDto } from './dto/change-profile.dto';
 
 @Injectable()
 export class UserService {
@@ -53,5 +54,34 @@ export class UserService {
         OR: [{ email }, { username }],
       },
     });
+  }
+
+  async changeUserProfile(id: string, data: changeProfileDto) {
+    try {
+      return this.prisma.user.update({
+        where: { id },
+        data,
+      });
+    } catch (error) {
+      console.log('changeUserProfile error', error);
+      throw new HttpException(
+        'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async deleteUserProfile(id: string) {
+    try {
+      return await this.prisma.user.delete({
+        where: { id },
+      });
+    } catch (error) {
+      console.log('deleteUserProfile error', error);
+      throw new HttpException(
+        'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }
