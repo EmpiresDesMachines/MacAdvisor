@@ -2,10 +2,16 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { User } from './types/user.interface';
 import { changeProfileDto } from './dto/change-profile.dto';
+import { hash } from 'bcrypt';
+import { sign } from 'jsonwebtoken';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async createUser(user: User) {
     try {
@@ -58,16 +64,50 @@ export class UserService {
 
   async changeUserProfile(id: string, data: changeProfileDto) {
     try {
-      return this.prisma.user.update({
+      if (data.email) {
+        const existingEmail = await this.prisma.user.findFirst({
+          where: {
+            AND: [{ email: data.email }, { NOT: { id } }],
+          },
+        });
+        if (existingEmail) {
+          throw new HttpException('Wrong Credentials', HttpStatus.BAD_REQUEST);
+        }
+      }
+      if (data.username) {
+        const existingUsername = await this.prisma.user.findFirst({
+          where: {
+            AND: [{ username: data.username }, { NOT: { id } }],
+          },
+        });
+        if (existingUsername) {
+          throw new HttpException('Wrong Credentials', HttpStatus.BAD_REQUEST);
+        }
+      }
+
+      let token: string | undefined = undefined;
+
+      if (data.password) {
+        const hashedPassword = await hash(data.password, 10);
+        data.password = hashedPassword;
+
+        token = sign(
+          { userId: id },
+          this.configService.get<string>('SECRET') as string,
+        );
+      }
+
+      const updatedUser = await this.prisma.user.update({
         where: { id },
         data,
       });
+
+      const { password, ...safeUser } = updatedUser;
+
+      return token ? { user: safeUser, token } : { user: safeUser };
     } catch (error) {
       console.log('changeUserProfile error', error);
-      throw new HttpException(
-        'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw new HttpException('Wrong Credentials', HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -78,10 +118,7 @@ export class UserService {
       });
     } catch (error) {
       console.log('deleteUserProfile error', error);
-      throw new HttpException(
-        'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw new HttpException('Internal server error', HttpStatus.BAD_REQUEST);
     }
   }
 }
