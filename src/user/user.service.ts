@@ -5,6 +5,7 @@ import { changeProfileDto } from './dto/change-profile.dto';
 import { hash } from 'bcrypt';
 import { sign } from 'jsonwebtoken';
 import { ConfigService } from '@nestjs/config';
+import { genUserName } from 'src/auth/utils/genUserName';
 
 @Injectable()
 export class UserService {
@@ -15,15 +16,24 @@ export class UserService {
 
   async createUser(user: User) {
     try {
+      if (!user.username) {
+        user.username = genUserName();
+      }
+
       const hasUser = await this.userExsists(user.email, user.username);
+
       if (hasUser) {
         throw new HttpException('The user already exists', HttpStatus.CONFLICT);
       }
+
+      const hashedPassword = await hash(user.password, 10);
+      user.password = hashedPassword;
 
       const newUser = await this.prisma.user.create({
         data: user,
       });
 
+      // user without password
       const { password, ...publicUser } = newUser;
 
       return publicUser;
@@ -38,6 +48,14 @@ export class UserService {
 
   async findByEmail(email: string) {
     return await this.prisma.user.findUnique({ where: { email } });
+  }
+
+  async findByLogin(login: string) {
+    return await this.prisma.user.findFirst({
+      where: {
+        OR: [{ email: login }, { username: login }],
+      },
+    });
   }
 
   async findById(id: string) {
@@ -93,7 +111,7 @@ export class UserService {
 
         token = sign(
           { userId: id },
-          this.configService.get<string>('SECRET') as string,
+          this.configService.getOrThrow<string>('SECRET'),
         );
       }
 
