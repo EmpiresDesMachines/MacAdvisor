@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { User } from './types/user.interface';
 import { changeProfileDto } from './dto/change-profile.dto';
@@ -9,10 +9,31 @@ import { genUserName } from 'src/auth/utils/genUserName';
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
   ) {}
+
+  async findByEmail(email: string) {
+    return await this.prisma.user.findUnique({ where: { email } });
+  }
+
+  async findByLogin(login: string) {
+    return await this.prisma.user.findFirst({
+      where: {
+        OR: [{ email: login }, { username: login }],
+      },
+    });
+  }
+
+  async userExsists(email: string, username: string) {
+    return await this.prisma.user.findFirst({
+      where: {
+        OR: [{ email }, { username }],
+      },
+    });
+  }
 
   async createUser(user: User) {
     try {
@@ -38,7 +59,7 @@ export class UserService {
 
       return publicUser;
     } catch (error) {
-      console.error('Error in register', error);
+      this.logger.error('Error in register', error);
       throw new HttpException(
         'Internal server error',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -46,24 +67,19 @@ export class UserService {
     }
   }
 
-  async findByEmail(email: string) {
-    return await this.prisma.user.findUnique({ where: { email } });
-  }
-
-  async findByLogin(login: string) {
-    return await this.prisma.user.findFirst({
-      where: {
-        OR: [{ email: login }, { username: login }],
-      },
-    });
-  }
-
-  async userExsists(email: string, username: string) {
-    return await this.prisma.user.findFirst({
-      where: {
-        OR: [{ email }, { username }],
-      },
-    });
+  async deleteUserProfile(id: string) {
+    try {
+      await this.prisma.user.delete({
+        where: { id },
+      });
+      return { success: true, message: `User ${id} was deleted successfully` };
+    } catch (error) {
+      this.logger.error('deleteUserProfile error', error);
+      throw new HttpException(
+        'deleteUserProfile error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   async changeUserProfile(id: string, data: changeProfileDto) {
@@ -110,19 +126,8 @@ export class UserService {
 
       return token ? { user: safeUser, token } : { user: safeUser };
     } catch (error) {
-      console.log('changeUserProfile error', error);
+      this.logger.error('changeUserProfile error', error);
       throw new HttpException('Wrong Credentials', HttpStatus.BAD_REQUEST);
-    }
-  }
-
-  async deleteUserProfile(id: string) {
-    try {
-      return await this.prisma.user.delete({
-        where: { id },
-      });
-    } catch (error) {
-      console.log('deleteUserProfile error', error);
-      throw new HttpException('Internal server error', HttpStatus.BAD_REQUEST);
     }
   }
 }

@@ -23,6 +23,11 @@ export class PrismaClientExceptionFilter implements ExceptionFilter {
       message = 'This record already exists';
     }
 
+    if (exception.code === 'P2005') {
+      status = HttpStatus.NOT_FOUND;
+      message = 'Record not found';
+    }
+
     response.status(status).json({
       statusCode: status,
       message,
