@@ -44,7 +44,7 @@ export class UserService {
       const hasUser = await this.userExsists(user.email, user.username);
 
       if (hasUser) {
-        throw new HttpException('The user already exists', HttpStatus.CONFLICT);
+        this.logger.error('The user already exists');
       }
 
       const hashedPassword = await hash(user.password, 10);
@@ -60,74 +60,37 @@ export class UserService {
       return publicUser;
     } catch (error) {
       this.logger.error('Error in register', error);
-      throw new HttpException(
-        'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw error;
     }
   }
 
   async deleteUserProfile(id: string) {
-    try {
-      await this.prisma.user.delete({
-        where: { id },
-      });
-      return { success: true, message: `User ${id} was deleted successfully` };
-    } catch (error) {
-      this.logger.error('deleteUserProfile error', error);
-      throw new HttpException(
-        'deleteUserProfile error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    await this.prisma.user.delete({
+      where: { id },
+    });
+    return { success: true, message: `User ${id} was deleted successfully` };
   }
 
   async changeUserProfile(id: string, data: changeProfileDto) {
-    try {
-      if (data.email) {
-        const existingEmail = await this.prisma.user.findFirst({
-          where: {
-            AND: [{ email: data.email }, { NOT: { id } }],
-          },
-        });
-        if (existingEmail) {
-          throw new HttpException('Wrong Credentials', HttpStatus.BAD_REQUEST);
-        }
-      }
-      if (data.username) {
-        const existingUsername = await this.prisma.user.findFirst({
-          where: {
-            AND: [{ username: data.username }, { NOT: { id } }],
-          },
-        });
-        if (existingUsername) {
-          throw new HttpException('Wrong Credentials', HttpStatus.BAD_REQUEST);
-        }
-      }
+    const updateData = { ...data };
+    let token: string | undefined;
 
-      let token: string | undefined = undefined;
+    if (data.password) {
+      const hashedPassword = await hash(data.password, 10);
+      updateData.password = hashedPassword;
 
-      if (data.password) {
-        const hashedPassword = await hash(data.password, 10);
-        data.password = hashedPassword;
-
-        token = sign(
-          { userId: id },
-          this.configService.getOrThrow<string>('SECRET'),
-        );
-      }
-
-      const updatedUser = await this.prisma.user.update({
-        where: { id },
-        data,
-      });
-
-      const { password, ...safeUser } = updatedUser;
-
-      return token ? { user: safeUser, token } : { user: safeUser };
-    } catch (error) {
-      this.logger.error('changeUserProfile error', error);
-      throw new HttpException('Wrong Credentials', HttpStatus.BAD_REQUEST);
+      token = sign(
+        { userId: id },
+        this.configService.getOrThrow<string>('SECRET'),
+      );
     }
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: updateData,
+    });
+
+    const { password, ...safeUser } = updatedUser;
+
+    return token ? { user: safeUser, token } : { user: safeUser };
   }
 }
