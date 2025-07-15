@@ -3,30 +3,35 @@ import {
   ExceptionFilter,
   ArgumentsHost,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { Response } from 'express';
+import { Response, Request } from 'express';
+import { prismaErrorsList } from './prisma-errors-list';
 
 @Catch(Prisma.PrismaClientKnownRequestError)
 export class PrismaClientExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(PrismaClientExceptionFilter.name);
   catch(exception: Prisma.PrismaClientKnownRequestError, host: ArgumentsHost) {
-    console.error(exception.message);
-
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
+    const request = ctx.getRequest<Request>();
 
-    let status = HttpStatus.INTERNAL_SERVER_ERROR;
-    let message = 'Something went wrong';
+    const error = prismaErrorsList[exception.code] || {
+      status: HttpStatus.INTERNAL_SERVER_ERROR,
+      message: 'Prisma Error',
+    };
 
-    if (exception.code === 'P2002') {
-      status = HttpStatus.CONFLICT;
-      message = 'This record already exists';
-    }
+    const { status, message } = error;
 
-    if (exception.code === 'P2005') {
-      status = HttpStatus.NOT_FOUND;
-      message = 'Record not found';
-    }
+    this.logger.error(
+      `PrismaExceptionFilter: [method: ${request.method}, url: ${request.url}]`,
+      {
+        code: exception.code,
+        message: exception.message,
+        meta: exception.meta,
+      },
+    );
 
     response.status(status).json({
       statusCode: status,
