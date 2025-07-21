@@ -1,4 +1,10 @@
-import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import {
+  HttpCode,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { GetProductsDto } from './dto/get-products.dto';
 import { CategoryEnum } from './types/category.enum';
@@ -19,6 +25,12 @@ export class ProductsService {
   async getAllProducts(dto: GetProductsDto) {
     const { page, limit, skip } = this.getPaginationParams(dto);
 
+    const productCount = await this.prisma.product.count();
+    if (!productCount) {
+      this.logger.error('Database is empty');
+      throw new HttpException('No data was found', HttpStatus.NOT_FOUND);
+    }
+
     const data = await this.prisma.product.findMany({
       take: limit,
       skip,
@@ -27,18 +39,11 @@ export class ProductsService {
       },
     });
 
-    const productCount = await this.prisma.product.count();
-    if (!productCount) {
-      this.logger.error('Database is empty');
-      throw new HttpException('No data was found', HttpStatus.NOT_FOUND);
-    }
-
     const totalPages = Math.ceil(productCount / limit);
 
     return {
       data,
       currentPage: page,
-      pageSize: data.length,
       totalPages,
       productCount,
     };
@@ -59,7 +64,15 @@ export class ProductsService {
 
   async getProductsByCategory(dto: GetProductsDto, category: CategoryEnum) {
     const { page, limit, skip } = this.getPaginationParams(dto);
-    const where = category ? { category } : {};
+    const where = { category };
+
+    const productCount = await this.prisma.product.count({ where });
+    if (!productCount) {
+      throw new HttpException(
+        `Product(s) with category ${category} was not found`,
+        HttpStatus.NOT_FOUND,
+      );
+    }
 
     const data = await this.prisma.product.findMany({
       take: limit,
@@ -69,19 +82,12 @@ export class ProductsService {
         intro: 'desc',
       },
     });
-    const productCount = await this.prisma.product.count({ where });
-    if (!productCount) {
-      throw new HttpException(
-        `Product(s) with category ${category} was not found`,
-        HttpStatus.NOT_FOUND,
-      );
-    }
+
     const totalPages = Math.ceil(productCount / limit);
 
     return {
       data,
       currentPage: page,
-      pageSize: data.length,
       totalPages,
       productCount,
     };
