@@ -8,38 +8,23 @@ import { CategoryEnum } from './types/category.enum';
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
-  // /products
-  // /products?page=1&limit=10
   @Get()
-  async getProducts(@Query() dto: GetProductsDto) {
-    return await this.productsService.getProducts(dto);
+  async getAllProducts(@Query() dto: GetProductsDto) {
+    return await this.productsService.getAllProducts(dto);
   }
 
-  // /products/MacBook%20Pro
-  // /products/MacBook%20Pro?page=1&limit=10
-  @Get('category/:category')
+  @Get(':category')
   async getProductsByCategory(
+    @Param() { category }: { category: CategoryEnum },
     @Query() dto: GetProductsDto,
-    //@Param('category') category: string,
-    @Param() { category }: CategoryParamDto,
   ) {
-    return await this.productsService.getProducts(
-      dto,
-      category as CategoryEnum,
-    );
+    return await this.productsService.getProductsByCategory(dto, category);
   }
 
-  // /products/category/MacBook Air/3baad9d5-3fa9-4ddc-b507-45a95e3ca56b
-  @Get('category/:category/:id')
-  async getProductsById(
-    @Query() dto: GetProductsDto,
-    //@Param('category') category: string,
-    @Param() { category, id }: CategoryParamDto,
+  @Get(':category/:id')
+  async getProductById(
+    @Param() { category, id }: { category: CategoryEnum; id: string },
   ) {
-    return await this.productsService.getProducts(
-      dto,
-      category as CategoryEnum,
-      id,
-    );
+    return await this.productsService.getProductById(id);
   }
 }
