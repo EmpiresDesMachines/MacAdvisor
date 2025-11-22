@@ -23,13 +23,23 @@ export class ProductsService {
   }
 
   async getAllProducts(dto: GetProductsDto) {
-    const { page, limit, skip } = this.getPaginationParams(dto);
-
     const productCount = await this.prisma.product.count();
     if (!productCount) {
       this.logger.error('Database is empty');
       throw new HttpException('No data was found', HttpStatus.NOT_FOUND);
     }
+    const { page, limit, skip } = this.getPaginationParams(
+      dto.page || dto.limit
+        ? dto
+        : {
+            page: 1,
+            limit: productCount,
+          },
+    );
+    // const { page, limit, skip } = this.getPaginationParams({
+    //   page: 1,
+    //   limit: productCount,
+    // });
 
     const data = await this.prisma.product.findMany({
       take: limit,

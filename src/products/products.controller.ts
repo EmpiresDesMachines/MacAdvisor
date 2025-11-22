@@ -13,18 +13,16 @@ export class ProductsController {
     return await this.productsService.getAllProducts(dto);
   }
 
+  @Get('/catalog/:id')
+  async getProductById(@Param() { id }: { id: string }) {
+    return await this.productsService.getProductById(id);
+  }
+
   @Get(':category')
   async getProductsByCategory(
     @Param() { category }: { category: CategoryEnum },
     @Query() dto: GetProductsDto,
   ) {
     return await this.productsService.getProductsByCategory(dto, category);
-  }
-
-  @Get(':category/:id')
-  async getProductById(
-    @Param() { category, id }: { category: CategoryEnum; id: string },
-  ) {
-    return await this.productsService.getProductById(id);
   }
 }
