@@ -1,4 +1,11 @@
-import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { User } from './types/user.interface';
 import { changeProfileDto } from './dto/change-profile.dto';
@@ -27,7 +34,7 @@ export class UserService {
     });
   }
 
-  async userExsists(email: string, username: string) {
+  async userExists(email: string, username: string) {
     return await this.prisma.user.findFirst({
       where: {
         OR: [{ email }, { username }],
@@ -41,10 +48,14 @@ export class UserService {
         user.username = genUserName();
       }
 
-      const hasUser = await this.userExsists(user.email, user.username);
+      const hasUser = await this.userExists(user.email, user.username);
 
       if (hasUser) {
         this.logger.error('The user already exists');
+        throw new ConflictException('User already exists');
+      }
+      if (!user.password) {
+        throw new BadRequestException('Password is required');
       }
 
       const hashedPassword = await hash(user.password, 10);
@@ -65,32 +76,42 @@ export class UserService {
   }
 
   async deleteUserProfile(id: string) {
-    await this.prisma.user.delete({
-      where: { id },
-    });
-    return { success: true, message: `User ${id} was deleted successfully` };
+    try {
+      await this.prisma.user.delete({
+        where: { id },
+      });
+      return { success: true, message: `User ${id} was deleted successfully` };
+    } catch (error) {
+      this.logger.error(`Error deleting user with id ${id}`, error);
+      throw error; // P2025
+    }
   }
 
   async changeUserProfile(id: string, data: changeProfileDto) {
-    const updateData = { ...data };
-    let token: string | undefined;
+    try {
+      const updateData = { ...data };
+      let token: string | undefined;
 
-    if (data.password) {
-      const hashedPassword = await hash(data.password, 10);
-      updateData.password = hashedPassword;
+      if (data.password) {
+        const hashedPassword = await hash(data.password, 10);
+        updateData.password = hashedPassword;
 
-      token = sign(
-        { userId: id },
-        this.configService.getOrThrow<string>('SECRET'),
-      );
+        token = sign(
+          { userId: id },
+          this.configService.getOrThrow<string>('SECRET'),
+        );
+      }
+      const updatedUser = await this.prisma.user.update({
+        where: { id },
+        data: updateData,
+      });
+
+      const { password, ...safeUser } = updatedUser;
+
+      return token ? { user: safeUser, token } : { user: safeUser };
+    } catch (error) {
+      this.logger.error('Error in changeUserProfile', error);
+      throw error;
     }
-    const updatedUser = await this.prisma.user.update({
-      where: { id },
-      data: updateData,
-    });
-
-    const { password, ...safeUser } = updatedUser;
-
-    return token ? { user: safeUser, token } : { user: safeUser };
   }
 }
