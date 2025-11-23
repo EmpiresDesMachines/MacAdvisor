@@ -28,6 +28,8 @@ export class AppModule {
       .exclude(
         { path: 'auth', method: RequestMethod.ALL },
         { path: 'auth/*path', method: RequestMethod.ALL },
+        { path: 'products', method: RequestMethod.ALL },
+        { path: 'products/*path', method: RequestMethod.ALL },
       )
       .forRoutes({
         path: '*path',
