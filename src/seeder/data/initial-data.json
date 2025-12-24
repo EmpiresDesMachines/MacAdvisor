@@ -6156,5 +6156,21 @@
       "https://everymac.com/images/cpu_pictures/apple-mac-studio-2025.png"
     ],
     "category": "Other"
+  },
+  {
+    "intro": "2025-10-09T00:00:00.000Z",
+    "disc": "2025-10-16T00:00:00.000Z",
+    "model": "N/A (EMC N/A)",
+    "family": "14-Inch, M5, 2025 ",
+    "ram": "16 GB or 24 GB",
+    "vram": "Integrated",
+    "storage": "512 GB, 1 TB SSD",
+    "optical": "None",
+    "titles": ["MacBook Pro 14\" M5 (2025)\" 10C CPU/10C GPU"],
+    "cpus": ["M5 Apple 10C CPU"],
+    "imgs": [
+      "https://everymac.com/images/cpu_pictures/macbook-pro-m3-14-2023-silver.jpg"
+    ],
+    "category": "MacBook Pro"
   }
 ]
